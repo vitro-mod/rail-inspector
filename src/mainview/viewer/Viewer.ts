@@ -62,7 +62,7 @@ export class Viewer {
     ) {
         const darkModeQuery = window.matchMedia('(prefers-color-scheme: dark)');
 
-        this.scene.background = darkModeQuery.matches ? new Color(0x333333) : new Color(0xcccccc);
+        this.scene.background = darkModeQuery.matches ? new Color(0x666666) : new Color(0xcccccc);
 
         this.webGPU = navigator.gpu !== undefined;
 
