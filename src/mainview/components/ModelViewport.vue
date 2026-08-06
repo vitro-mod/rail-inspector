@@ -4,9 +4,10 @@
 import { markRaw, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useViewportStore } from '../stores/viewport'
 import { Viewer } from '../viewer/Viewer'
+import { FileDialogResult } from '../file-dialog';
 
 const props = defineProps<{
-    model?: string | null
+    model?: FileDialogResult | null
 }>()
 
 const container = ref<HTMLElement | null>(null)

@@ -30,8 +30,10 @@ export type AppRPC = {
     webview: RPCSchema<{
         requests: {}
         messages: {
-            modelDialogResult: {
+            fileDialogResult: {
                 requestId: string
+                dir: string | null
+                file: string | null
                 path: string | null
                 error: string | null
             }

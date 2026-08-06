@@ -1,14 +1,16 @@
 import type { AppRPC } from '../shared/rpc.types';
 import { rpc } from './main'
 
+export type FileDialogResult = AppRPC['webview']['messages']['fileDialogResult'];
+
 interface PendingFileDialog {
-    resolve: (path: string | null) => void
+    resolve: (fileDialogResult: FileDialogResult | null) => void
     reject: (error: Error) => void
 }
 
 const pendingFileDialogs = new Map<string, PendingFileDialog>();
 
-export function selectModelFile(): Promise<string | null> {
+export function selectFile(): Promise<FileDialogResult | null> {
     const requestId = crypto.randomUUID();
 
     return new Promise((resolve, reject) => {
@@ -21,8 +23,9 @@ export function selectModelFile(): Promise<string | null> {
     })
 }
 
-export function modelDialogResult({ requestId, path, error }: AppRPC['webview']['messages']['modelDialogResult']): void | undefined {
-    console.log('modelDialogResult received:', { requestId, path, error })
+export function fileDialogResult(fileDialogResult: FileDialogResult): void | undefined {
+    const { requestId, dir, file, path, error } = fileDialogResult;
+    console.log('fileDialogResult received:', { requestId, dir, file, path, error })
     const pending = pendingFileDialogs.get(requestId)
 
     if (!pending) {
@@ -34,6 +37,6 @@ export function modelDialogResult({ requestId, path, error }: AppRPC['webview'][
     if (error) {
         pending.reject(new Error(error))
     } else {
-        pending.resolve(path)
+        pending.resolve(fileDialogResult)
     }
 }

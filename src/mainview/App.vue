@@ -2,22 +2,22 @@
 import { shallowRef } from 'vue'
 import ModelViewport from './components/ModelViewport.vue'
 import { useViewportStore } from './stores/viewport'
-import { selectModelFile } from './file-dialog.js'
+import { FileDialogResult, selectFile } from './file-dialog.js'
 
 const viewport = shallowRef<InstanceType<typeof ModelViewport> | null>(null)
-const model = shallowRef<string | null>(null)
+const model = shallowRef<FileDialogResult | null>(null)
 
 const viewportStore = useViewportStore();
 
 async function openModel(): Promise<void> {
     try {
-        const path = await selectModelFile();
+        const fileDialogResult = await selectFile();
 
-        if (!path) {
+        if (!fileDialogResult) {
             return
         }
 
-        model.value = path
+        model.value = fileDialogResult
     } catch (error) {
         console.error('File dialog failed:', error)
     }
@@ -57,9 +57,9 @@ async function openModel(): Promise<void> {
 
 <style>
 :root {
-    --text-color: light-dark(white, black);
-    --toolbar-background: light-dark(#1a1a1a, #f0f0f0);
-    --toolbar-hover-background: light-dark(#333333, #e0e0e0);
+    --text-color: light-dark(black, white);
+    --toolbar-background: light-dark(#f0f0f0, #1a1a1a);
+    --toolbar-hover-background: light-dark(#e0e0e0, #333333);
 }
 
 html,

@@ -3,13 +3,13 @@ import type { AppRPC } from "../shared/rpc.types";
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import App from './App.vue'
-import { modelDialogResult } from './file-dialog'
+import { fileDialogResult } from './file-dialog'
 
 const rpcInstance = Electroview.defineRPC<AppRPC>({
     handlers: {
         requests: {},
         messages: {
-            modelDialogResult
+            fileDialogResult
         },
     },
 });
@@ -21,6 +21,6 @@ if (!electroview.rpc) {
 }
 
 export const rpc = electroview.rpc;
-window.rpc = rpc;
+// window.rpc = rpc;
 
 createApp(App).use(createPinia()).mount('#app');

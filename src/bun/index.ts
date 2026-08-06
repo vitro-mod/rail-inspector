@@ -1,6 +1,8 @@
 import { BrowserWindow, BrowserView, Updater, Utils } from "electrobun/bun";
 import type { AppRPC, BinaryFilePayload, SerializedUint8Array } from "../shared/rpc.types";
-import { basename } from 'node:path'
+import nodePath from 'node:path'
+
+const TITLE = "Shape Inspector";
 
 const DEV_SERVER_PORT = 5173;
 const DEV_SERVER_URL = `http://localhost:${DEV_SERVER_PORT}`;
@@ -38,7 +40,7 @@ const rpc = BrowserView.defineRPC<AppRPC>({
 
 				return {
 					path,
-					name: basename(path),
+					name: nodePath.basename(path),
 					data: bytes as unknown as SerializedUint8Array,
 				}
 			},
@@ -56,17 +58,27 @@ const rpc = BrowserView.defineRPC<AppRPC>({
 
 					console.log('File dialog opened, selected paths:', paths);
 
-					rpc.send.modelDialogResult({
+					const fileDialogResult = {
 						requestId,
+						dir: paths[0] ? nodePath.dirname(paths[0]) : null,
+						file: paths[0] ? nodePath.basename(paths[0]) : null,
 						path: paths[0] ?? null,
 						error: null,
-					});
+					}
 
-					console.log('File dialog result sent:', { requestId, path: paths[0] ?? null });
+					if (fileDialogResult.dir?.toLowerCase().endsWith('shapes')) {
+						fileDialogResult.dir = nodePath.join(fileDialogResult.dir, '..', 'textures', nodePath.sep);
+					}
+
+					setTitle(fileDialogResult.path ? `${TITLE} - ${fileDialogResult.path}` : TITLE);
+
+					rpc.send.fileDialogResult(fileDialogResult);
 				} catch (error) {
 					console.error('File dialog failed:', error);
-					rpc.send.modelDialogResult({
+					rpc.send.fileDialogResult({
 						requestId,
+						dir: null,
+						file: null,
 						path: null,
 						error: error instanceof Error ? error.message : String(error),
 					});
@@ -80,7 +92,7 @@ const rpc = BrowserView.defineRPC<AppRPC>({
 const url = await getMainViewUrl();
 
 const mainWindow = new BrowserWindow({
-	title: "Rail Inspector",
+	title: TITLE,
 	url,
 	frame: {
 		width: 900,
@@ -91,6 +103,10 @@ const mainWindow = new BrowserWindow({
 	rpc,
 });
 
+function setTitle(title: string) {
+	mainWindow.setTitle(title);
+}
+
 console.log("Bun app started!");
 
-mainWindow.webview.openDevTools();
+// mainWindow.webview.openDevTools();

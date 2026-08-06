@@ -13,6 +13,7 @@ import {
     Scene,
     Vector3,
     LOD,
+    LinearSRGBColorSpace
 } from 'three'
 import { WebGPURenderer } from 'three/webgpu';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
@@ -22,9 +23,9 @@ import { GeometryFactory } from './msts/GeometryFactory';
 import { MaterialFactory } from './msts/MaterialFactory';
 import { MstsTextureLoader } from './msts/MstsTextureLoader';
 import { Cache } from './Cache';
-import { MstsFileLoader } from './msts/MstsFileLoader';
 import { RpcFileLoader } from './msts/RpcFileLoader';
 import { IMstsLoader } from './msts/IMstsLoader';
+import { FileDialogResult } from '../file-dialog';
 
 export interface ViewerOptions {
     showGrid?: boolean
@@ -59,13 +60,15 @@ export class Viewer {
         private readonly container: HTMLElement,
         options: ViewerOptions = {},
     ) {
-        this.scene.background = new Color(0x333333)
+        const darkModeQuery = window.matchMedia('(prefers-color-scheme: dark)');
+
+        this.scene.background = darkModeQuery.matches ? new Color(0x333333) : new Color(0xcccccc);
 
         this.webGPU = navigator.gpu !== undefined;
 
         this.renderer = new WebGPURenderer({ forceWebGL: !this.webGPU, antialias: true });
-
         this.renderer.setPixelRatio(window.devicePixelRatio);
+        this.renderer.outputColorSpace = LinearSRGBColorSpace;
         this.container.appendChild(this.renderer.domElement)
 
         this.camera.position.set(5, 3, 5)
@@ -100,8 +103,11 @@ export class Viewer {
         this.shapeLoader = new MstsShapeLoader(this.cache, this.fileLoader, this.textureLoader, this.materialFactory, this.geometryFactory);
     }
 
-    public async loadModel(url: string): Promise<LOD> {
-        const model = await this.shapeLoader.load(url, '');
+    public async loadModel(url: FileDialogResult): Promise<LOD> {
+        if (!url.path || !url.file) {
+            throw new Error('No file specified in FileDialogResult');
+        }
+        const model = await this.shapeLoader.load(url.path, url.dir ?? '', 0);
         console.log('Model loaded:', model);
         return model;
     }
