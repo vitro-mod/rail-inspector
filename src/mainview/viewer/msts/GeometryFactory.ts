@@ -15,8 +15,8 @@ export class GeometryFactory {
         geometry.setAttribute('position', new THREE.Float32BufferAttribute(data.attributes.position, 3));
         geometry.setAttribute('normal', new THREE.Float32BufferAttribute(data.attributes.normal, 3));
         geometry.setAttribute('uv', new THREE.Float32BufferAttribute(data.attributes.uv, 2));
-        geometry.setAttribute('color1', new THREE.Float32BufferAttribute(data.attributes.color1, 4));
-        geometry.setAttribute('color2', new THREE.Float32BufferAttribute(data.attributes.color2, 4));
+        geometry.setAttribute('color1', new THREE.Uint8BufferAttribute(data.attributes.color1, 4, true));
+        geometry.setAttribute('color2', new THREE.Uint8BufferAttribute(data.attributes.color2, 4, true));
 
         return geometry;
     }
@@ -35,8 +35,8 @@ export class GeometryFactory {
                     position: new Float32Array(subObject.vertices.length * 3),
                     normal: new Float32Array(subObject.vertices.length * 3),
                     uv: new Float32Array(subObject.vertices.length * 2),
-                    color1: new Float32Array(subObject.vertices.length * 4),
-                    color2: new Float32Array(subObject.vertices.length * 4),
+                    color1: new Uint8Array(subObject.vertices.length * 4),
+                    color2: new Uint8Array(subObject.vertices.length * 4),
                 };
 
                 for (let k = 0; k < subObject.vertices.length; k++) {
@@ -62,16 +62,16 @@ export class GeometryFactory {
                     attributes.uv[k * 2 + 1] = uv[1];
 
                     const dayColor = subObject.vertices[k].dayColor;
-                    attributes.color1[k * 4 + 0] = (dayColor >> 16 & 255) / 255;
-                    attributes.color1[k * 4 + 1] = (dayColor >> 8 & 255) / 255;
-                    attributes.color1[k * 4 + 2] = (dayColor & 255) / 255;
-                    attributes.color1[k * 4 + 3] = (dayColor >> 24 & 255) / 255;
+                    attributes.color1[k * 4 + 0] = dayColor >>> 16 & 255;
+                    attributes.color1[k * 4 + 1] = dayColor >>> 8 & 255;
+                    attributes.color1[k * 4 + 2] = dayColor & 255;
+                    attributes.color1[k * 4 + 3] = dayColor >>> 24;
 
                     const nightColor = subObject.vertices[k].nightColor;
-                    attributes.color2[k * 4 + 0] = (nightColor >> 16 & 255) / 255;
-                    attributes.color2[k * 4 + 1] = (nightColor >> 8 & 255) / 255;
-                    attributes.color2[k * 4 + 2] = (nightColor & 255) / 255;
-                    attributes.color2[k * 4 + 3] = (nightColor >> 24 & 255) / 255;
+                    attributes.color2[k * 4 + 0] = nightColor >>> 16 & 255;
+                    attributes.color2[k * 4 + 1] = nightColor >>> 8 & 255;
+                    attributes.color2[k * 4 + 2] = nightColor & 255;
+                    attributes.color2[k * 4 + 3] = nightColor >>> 24;
                 }
 
                 // A mesh can only have one matrix transform, so collect primitive

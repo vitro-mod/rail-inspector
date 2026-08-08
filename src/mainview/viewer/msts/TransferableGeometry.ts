@@ -4,8 +4,8 @@ export type TransferableAttributes = {
     position: Float32Array;
     normal: Float32Array;
     uv: Float32Array;
-    color1: Float32Array;
-    color2: Float32Array;
+    color1: Uint8Array;
+    color2: Uint8Array;
 }
 
 type BoundingSphere = {
@@ -28,8 +28,8 @@ export class TransferableGeometry {
         const position = new Float32Array(vertexCount * 3);
         const normal = new Float32Array(vertexCount * 3);
         const uv = new Float32Array(vertexCount * 2);
-        const color1 = new Float32Array(vertexCount * 4);
-        const color2 = new Float32Array(vertexCount * 4);
+        const color1 = new Uint8Array(vertexCount * 4);
+        const color2 = new Uint8Array(vertexCount * 4);
         const indices = new Uint32Array(triangleCount * 3);
 
         this.data = {
@@ -56,8 +56,8 @@ export class TransferableGeometry {
         const position = <Float32Array>geometry.attributes.position.array;
         const normal = <Float32Array>geometry.attributes.normal.array;
         const uv = <Float32Array>geometry.attributes.uv.array;
-        const color1 = <Float32Array>geometry.attributes.color1.array;
-        const color2 = <Float32Array>geometry.attributes.color2.array;
+        const color1 = <Uint8Array>geometry.attributes.color1.array;
+        const color2 = <Uint8Array>geometry.attributes.color2.array;
         const indices = <Uint32Array>geometry.index?.array;
 
         const boundingSphere: BoundingSphere | undefined = geometry.boundingSphere ? {
