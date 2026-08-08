@@ -1,6 +1,12 @@
 import * as THREE from 'three';
 import { MstsShape } from 'msts-parser';
 import { TransferableAttributes, TransferableGeometryData } from './TransferableGeometry';
+
+type PrimitiveGroup = {
+    primStateIdx: number;
+    vertexIdxs: number[];
+};
+
 export class GeometryFactory {
 
     create(data: TransferableGeometryData): THREE.BufferGeometry {
@@ -68,32 +74,62 @@ export class GeometryFactory {
                     attributes.color2[k * 4 + 3] = (nightColor >> 24 & 255) / 255;
                 }
 
-                // Maybe use BufferGeometry.addGroup() here for sub-meshes
+                // A mesh can only have one matrix transform, so collect primitive
+                // lists by matrix and represent their materials as geometry groups.
+                const primitiveGroupsByMatrix = new Map<number, PrimitiveGroup[]>();
                 for (let j = 0; j < subObject.primStateIdxs!.length; j++) {
                     const primStateIdx = subObject.primStateIdxs![j];
                     const triList = subObject.triLists![j];
-
-                    const indices = new Uint32Array(triList.vertexIdxs.length);
-                    for (let k = 0; k < triList.vertexIdxs.length; k += 3) {
-                        const k1 = triList.vertexIdxs[k];
-                        const k2 = triList.vertexIdxs[k + 1];
-                        const k3 = triList.vertexIdxs[k + 2];
-                        const v1 = subObject.vertices[k1].index;
-                        const v2 = subObject.vertices[k2].index;
-                        const v3 = subObject.vertices[k3].index;
-                        indices[k] = v3;
-                        indices[k + 1] = v2;
-                        indices[k + 2] = v1;
-                    }
-
                     const primState = shape.primStates[primStateIdx];
                     const vtxState = shape.vtxStates[primState.vStateIndex];
                     const matrixIndex = vtxState.matrixIdx;
 
+                    let primitiveGroups = primitiveGroupsByMatrix.get(matrixIndex);
+                    if (!primitiveGroups) {
+                        primitiveGroups = [];
+                        primitiveGroupsByMatrix.set(matrixIndex, primitiveGroups);
+                    }
+
+                    primitiveGroups.push({
+                        primStateIdx,
+                        vertexIdxs: triList.vertexIdxs,
+                    });
+                }
+
+                for (const [matrixIndex, primitiveGroups] of primitiveGroupsByMatrix) {
+                    const indexCount = primitiveGroups.reduce((sum, group) => sum + group.vertexIdxs.length, 0);
+                    const indices = new Uint32Array(indexCount);
+
+                    let indexOffset = 0;
+                    for (let materialIndex = 0; materialIndex < primitiveGroups.length; materialIndex++) {
+                        const primitiveGroup = primitiveGroups[materialIndex];
+
+                        for (let k = 0; k < primitiveGroup.vertexIdxs.length; k += 3) {
+                            const k1 = primitiveGroup.vertexIdxs[k];
+                            const k2 = primitiveGroup.vertexIdxs[k + 1];
+                            const k3 = primitiveGroup.vertexIdxs[k + 2];
+                            const v1 = subObject.vertices[k1].index;
+                            const v2 = subObject.vertices[k2].index;
+                            const v3 = subObject.vertices[k3].index;
+                            indices[indexOffset + k] = v3;
+                            indices[indexOffset + k + 1] = v2;
+                            indices[indexOffset + k + 2] = v1;
+                        }
+
+                        indexOffset += primitiveGroup.vertexIdxs.length;
+                    }
+
                     const geometry = this.create({ attributes, indices });
 
+                    indexOffset = 0;
+                    for (let materialIndex = 0; materialIndex < primitiveGroups.length; materialIndex++) {
+                        const indexLength = primitiveGroups[materialIndex].vertexIdxs.length;
+                        geometry.addGroup(indexOffset, indexLength, materialIndex);
+                        indexOffset += indexLength;
+                    }
+
                     geometry.userData.matrixIndex = matrixIndex;
-                    geometry.userData.primStateIdx = primStateIdx;
+                    geometry.userData.primStateIdxs = primitiveGroups.map(group => group.primStateIdx);
                     geometry.userData.dLevelIdx = dLevelIdx;
 
                     geometries.push(geometry);

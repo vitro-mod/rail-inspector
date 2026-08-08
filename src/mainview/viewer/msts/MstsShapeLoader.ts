@@ -204,13 +204,17 @@ export class MstsShapeLoader {
         return result;
     }
 
-    private loadDataMaterials(shape: MstsShape, geometries: THREE.BufferGeometry[], urlBase: string): Promise<WebGPU.NodeMaterial>[] {
-        const materialPromises = geometries.map(geometry => this.materialFactory.getForShape(shape, geometry.userData.primStateIdx, urlBase));
+    private loadDataMaterials(shape: MstsShape, geometries: THREE.BufferGeometry[], urlBase: string): Promise<WebGPU.NodeMaterial[]>[] {
+        const materialPromises = geometries.map(geometry => Promise.all(
+            geometry.userData.primStateIdxs.map((primStateIdx: number) =>
+                this.materialFactory.getForShape(shape, primStateIdx, urlBase)
+            )
+        ));
 
         return materialPromises;
     }
 
-    private createMeshes(dLevelIdx: number, matricies: THREE.Group[], geometries: THREE.BufferGeometry[], materials: WebGPU.NodeMaterial[], count: number): THREE.InstancedMesh[] | THREE.Mesh[] {
+    private createMeshes(dLevelIdx: number, matricies: THREE.Group[], geometries: THREE.BufferGeometry[], materials: WebGPU.NodeMaterial[][], count: number): THREE.InstancedMesh[] | THREE.Mesh[] {
         // console.log(geometries);
 
         const result: THREE.InstancedMesh[] | THREE.Mesh[] = [];
@@ -225,7 +229,7 @@ export class MstsShapeLoader {
             // mesh.renderOrder = matricies[geometry.userData.matrixIndex].userData.roOffset + i;
             mesh.name = matricies[geometry.userData.matrixIndex].name;
             // mesh.frustumCulled = false;
-            // console.log('created mesh', url, geometry.userData.primStateIdx, geometry, material, mesh);
+            // console.log('created mesh', url, geometry.userData.primStateIdxs, geometry, material, mesh);
 
             mesh.userData.dLevelIdx = geometry.userData.dLevelIdx;
             mesh.userData.matrixIndex = geometry.userData.matrixIndex;
