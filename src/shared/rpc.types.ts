@@ -1,23 +1,17 @@
 import type { RPCSchema } from 'electrobun'
 
-export interface SerializedUint8Array {
-    [index: number]: number
-}
-
-export interface BinaryFilePayload {
-    path: string
-    name: string
-    data: SerializedUint8Array
+export interface FileUrlPayload {
+    url: string
 }
 
 export type AppRPC = {
     bun: RPCSchema<{
         requests: {
-            readFile: {
+            getFileUrl: {
                 params: {
                     path: string
                 }
-                response: BinaryFilePayload
+                response: FileUrlPayload
             }
         }
         messages: {

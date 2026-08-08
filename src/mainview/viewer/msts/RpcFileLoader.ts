@@ -11,11 +11,15 @@ export class RpcFileLoader implements IMstsLoader {
     }
 
     async load(url: string): Promise<MstsObject> {
-        const data = await rpc.request.readFile({ path: url });
+        const file = await rpc.request.getFileUrl({ path: url });
+        const response = await fetch(file.url);
 
-        const arrayBuffer = Uint8Array.from(Object.values(data.data));
+        if (!response.ok) {
+            throw new Error(`Failed to read ${url}: HTTP ${response.status} ${response.statusText}`);
+        }
 
-        const result = await this.mstsParser.parse(arrayBuffer.buffer, url);
+        const arrayBuffer = await response.arrayBuffer();
+        const result = await this.mstsParser.parse(arrayBuffer, url);
 
         return result;
     }

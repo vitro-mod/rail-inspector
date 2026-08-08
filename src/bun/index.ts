@@ -1,11 +1,57 @@
 import { BrowserWindow, BrowserView, Updater, Utils } from "electrobun/bun";
-import type { AppRPC, BinaryFilePayload, SerializedUint8Array } from "../shared/rpc.types";
+import type { AppRPC, FileUrlPayload } from "../shared/rpc.types";
 import nodePath from 'node:path'
 
 const TITLE = "Shape Inspector";
 
 const DEV_SERVER_PORT = 5173;
 const DEV_SERVER_URL = `http://localhost:${DEV_SERVER_PORT}`;
+
+const fileServerToken = crypto.randomUUID();
+const corsHeaders = {
+	'Access-Control-Allow-Origin': '*',
+	'Access-Control-Allow-Methods': 'GET, OPTIONS',
+	'Access-Control-Allow-Private-Network': 'true',
+};
+
+// Binary model and texture data must not travel through Electrobun RPC: RPC
+// messages are JSON encoded, which turns a Uint8Array into a very large object.
+const fileServer = Bun.serve({
+	hostname: '127.0.0.1',
+	port: 0,
+	async fetch(request) {
+		if (request.method === 'OPTIONS') {
+			return new Response(null, { status: 204, headers: corsHeaders });
+		}
+
+		const url = new URL(request.url);
+		if (request.method !== 'GET' || url.pathname !== '/file') {
+			return new Response('Not found', { status: 404, headers: corsHeaders });
+		}
+
+		if (url.searchParams.get('token') !== fileServerToken) {
+			return new Response('Forbidden', { status: 403, headers: corsHeaders });
+		}
+
+		const path = url.searchParams.get('path');
+		if (!path) {
+			return new Response('Missing path', { status: 400, headers: corsHeaders });
+		}
+
+		const file = Bun.file(path);
+		if (!(await file.exists())) {
+			return new Response('File not found', { status: 404, headers: corsHeaders });
+		}
+
+		return new Response(file, {
+			headers: {
+				...corsHeaders,
+				'Cache-Control': 'no-store',
+				'Content-Type': 'application/octet-stream',
+			},
+		});
+	},
+});
 
 // Check if Vite dev server is running for HMR
 async function getMainViewUrl(): Promise<string> {
@@ -28,20 +74,12 @@ const rpc = BrowserView.defineRPC<AppRPC>({
 	maxRequestTime: 2000,
 	handlers: {
 		requests: {
-			async readFile({ path }): Promise<BinaryFilePayload> {
-				console.log('readFile request received for path:', path)
-				const file = Bun.file(path)
-
-				if (!(await file.exists())) {
-					throw new Error(`File does not exist: ${path}`)
-				}
-
-				const bytes = new Uint8Array(await file.arrayBuffer())
-
+			getFileUrl({ path }): FileUrlPayload {
+				const url = new URL('/file', fileServer.url);
+				url.searchParams.set('token', fileServerToken);
+				url.searchParams.set('path', path);
 				return {
-					path,
-					name: nodePath.basename(path),
-					data: bytes as unknown as SerializedUint8Array,
+					url: url.toString(),
 				}
 			},
 		},
