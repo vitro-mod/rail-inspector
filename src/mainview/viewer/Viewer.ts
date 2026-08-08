@@ -84,6 +84,7 @@ export class Viewer {
             MIDDLE: THREE.MOUSE.PAN,
             RIGHT: THREE.MOUSE.DOLLY
         }
+        this.controls.zoomSpeed = 3;
 
         this.setupScene()
 
