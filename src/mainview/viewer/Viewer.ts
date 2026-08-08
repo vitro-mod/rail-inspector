@@ -15,6 +15,7 @@ import {
     LOD,
     LinearSRGBColorSpace
 } from 'three'
+import * as THREE from 'three';
 import { WebGPURenderer } from 'three/webgpu';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
 import { disposeObject } from './disposeObject'
@@ -36,7 +37,7 @@ export interface ViewerOptions {
 export class Viewer {
     private readonly scene = new Scene()
     private readonly webGPU: boolean
-    private readonly camera = new PerspectiveCamera(95, 1, 0.01, 1000)
+    private readonly camera = new PerspectiveCamera(45, 1, 0.01, 1000)
     private readonly renderer: WebGPURenderer
     private readonly controls: OrbitControls
 
@@ -77,7 +78,12 @@ export class Viewer {
             this.camera,
             this.renderer.domElement,
         )
-        this.controls.enableDamping = true
+        this.controls.enableDamping = false
+        this.controls.mouseButtons = {
+            LEFT: THREE.MOUSE.ROTATE,
+            MIDDLE: THREE.MOUSE.PAN,
+            RIGHT: THREE.MOUSE.DOLLY
+        }
 
         this.setupScene()
 
@@ -214,7 +220,7 @@ export class Viewer {
 
         const center = bounds.getCenter(new Vector3())
         const size = bounds.getSize(new Vector3())
-        const radius = Math.max(size.x, size.y, size.z) / 2
+        const radius = Math.max(size.x, size.y, size.z) / 4
 
         const verticalFov = this.camera.fov * Math.PI / 180
         const verticalDistance = radius / Math.tan(verticalFov / 2)
@@ -226,7 +232,7 @@ export class Viewer {
 
         const distance = Math.max(verticalDistance, horizontalDistance) * 1.5
 
-        const direction = new Vector3(1, 0.6, 1).normalize()
+        const direction = new Vector3(-1, 0, 0).normalize()
 
         this.camera.position.copy(center).addScaledVector(direction, distance)
         this.camera.near = Math.max(distance / 1000, 0.001)
