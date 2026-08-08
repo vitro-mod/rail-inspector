@@ -57,9 +57,11 @@ async function openModel(): Promise<void> {
 
 <style>
 :root {
-    --text-color: light-dark(black, white);
-    --toolbar-background: light-dark(#f0f0f0, #1a1a1a);
-    --toolbar-hover-background: light-dark(#e0e0e0, #333333);
+    @media (prefers-color-scheme: dark) {
+        --text-color: white;
+        --toolbar-background: #1a1a1a;
+        --toolbar-hover-background: #333333;
+    }
 }
 
 html,
