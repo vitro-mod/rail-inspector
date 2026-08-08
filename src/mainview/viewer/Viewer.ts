@@ -18,7 +18,6 @@ import {
 import * as THREE from 'three';
 import { WebGPURenderer } from 'three/webgpu';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
-import { disposeObject } from './disposeObject'
 import { MstsShapeLoader } from './msts/MstsShapeLoader';
 import { GeometryFactory } from './msts/GeometryFactory';
 import { MaterialFactory } from './msts/MaterialFactory';
@@ -114,13 +113,18 @@ export class Viewer {
         if (!url.path || !url.file) {
             throw new Error('No file specified in FileDialogResult');
         }
+
+        // This viewer displays one model at a time. Release the previous
+        // model's CPU/GPU resources before allocating the next one.
+        this.clearModel();
+
         const model = await this.shapeLoader.load(url.path, url.dir ?? '', 0);
         console.log('Model loaded:', model);
         return model;
     }
 
     public async setModel(model: Object3D): Promise<void> {
-        this.clearModel();
+        this.detachModel();
 
         this.model = model
         this.scene.add(model)
@@ -130,12 +134,16 @@ export class Viewer {
     }
 
     public clearModel(): void {
+        this.detachModel()
+        this.cache.clear()
+    }
+
+    private detachModel(): void {
         if (!this.model) {
             return
         }
 
         this.model.removeFromParent()
-        disposeObject(this.model)
         this.model = null
     }
 
@@ -172,6 +180,7 @@ export class Viewer {
         this.controls.dispose()
 
         this.clearModel()
+        this.textureLoader.dispose()
 
         this.renderer.dispose()
         this.renderer.domElement.remove()

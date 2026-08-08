@@ -2,7 +2,7 @@ import * as THREE from 'three';
 // import * as WebGPU from 'three/webgpu';
 import { MstsTexture } from 'msts-parser';
 import { IMstsLoader } from './IMstsLoader';
-import { Cache } from '../Cache';
+import { Cache, disposeTexture } from '../Cache';
 import { InFlightMap } from '../utils/InFlightMap';
 type TextureInit = (texture: THREE.Texture) => Promise<void> | void;
 
@@ -66,5 +66,10 @@ export class MstsTextureLoader {
         texture.anisotropy = 16;
 
         return texture;
+    }
+
+    dispose(): void {
+        this.textureLoading.clear();
+        disposeTexture(this.fallbackTexture);
     }
 }

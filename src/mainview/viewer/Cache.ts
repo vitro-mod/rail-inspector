@@ -4,6 +4,16 @@ import { MstsObject } from 'msts-parser';
 import { MstsTile } from 'msts-parser';
 import { InFlightMap } from './utils/InFlightMap';
 
+export function disposeTexture(texture: THREE.Texture): void {
+    const image = texture.image as { close?: () => void } | null | undefined;
+
+    texture.dispose();
+    image?.close?.();
+
+    // Do not retain the (now closed) ImageBitmap through Texture.source.
+    texture.image = null;
+}
+
 export class Cache {
     loaderResult = new Map<string, MstsObject>();
     texture = new Map<string, THREE.Texture>();
@@ -36,5 +46,32 @@ export class Cache {
         }
 
         return material;
+    }
+
+    clear(): void {
+        for (const geometries of this.geometry.values()) {
+            for (const geometry of geometries) {
+                geometry.dispose();
+            }
+        }
+
+        for (const material of new Set(this.material.values())) {
+            material.dispose();
+        }
+
+        for (const texture of new Set(this.texture.values())) {
+            disposeTexture(texture);
+        }
+
+        this.loaderResult.clear();
+        this.texture.clear();
+        this.material.clear();
+        this.geometry.clear();
+        this.tiles.clear();
+        this.tileShapes.clear();
+        this.worldGroups.clear();
+        this.terrainGroups.clear();
+        this.alreadyCompiled.clear();
+        this.materialInFlight.clear();
     }
 }
